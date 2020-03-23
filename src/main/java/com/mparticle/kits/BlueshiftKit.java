@@ -9,7 +9,10 @@ import com.blueshift.Blueshift;
 import com.blueshift.BlueshiftConstants;
 import com.blueshift.BlueshiftLogger;
 import com.blueshift.model.Configuration;
+import com.blueshift.model.UserInfo;
 import com.mparticle.MPEvent;
+import com.mparticle.MParticle;
+import com.mparticle.consent.ConsentState;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -36,7 +39,7 @@ import java.util.Map;
  *  - ./src/main/AndroidManifest.xml
  *  - ./consumer-proguard.pro
  */
-public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener {
+public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener, KitIntegration.UserAttributeListener {
     static final String BLUESHIFT_API_KEY = "blueshift_api_key";
     static final String APP_ICON_INT = "blueshift_app_icon";
     static final String PRODUCT_PAGE_CLASSNAME = "blueshift_product_page_classname";
@@ -253,5 +256,93 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
         List<ReportingMessage> messages = new LinkedList<>();
         messages.add(ReportingMessage.fromEvent(this, event));
         return messages;
+    }
+
+    @Override
+    public void onIncrementUserAttribute(String s, int i, String s1, FilteredMParticleUser filteredMParticleUser) {
+
+    }
+
+    @Override
+    public void onRemoveUserAttribute(String s, FilteredMParticleUser filteredMParticleUser) {
+
+    }
+
+    @Override
+    public void onSetUserAttribute(String key, Object value, FilteredMParticleUser filteredMParticleUser) {
+        UserInfo userInfo = UserInfo.getInstance(getContext());
+
+        if (key != null) {
+            switch (key) {
+                case MParticle.UserAttributes.FIRSTNAME:
+                    if (value != null) userInfo.setFirstname(String.valueOf(value));
+                    break;
+                case MParticle.UserAttributes.LASTNAME:
+                    if (value != null) userInfo.setLastname(String.valueOf(value));
+                    break;
+                case MParticle.UserAttributes.GENDER:
+                    if (value != null) userInfo.setGender(String.valueOf(value));
+                    break;
+                case MParticle.UserAttributes.AGE:
+                    // No setter
+                    break;
+                case MParticle.UserAttributes.ADDRESS:
+                    // No setter
+                    break;
+                case MParticle.UserAttributes.MOBILE_NUMBER:
+                    // No setter
+                    break;
+                case MParticle.UserAttributes.CITY:
+                    // No Setter
+                    break;
+                case MParticle.UserAttributes.STATE:
+                    // No setter
+                    break;
+                case MParticle.UserAttributes.ZIPCODE:
+                    // No setter
+                    break;
+                case MParticle.UserAttributes.COUNTRY:
+                    // No setter
+                    break;
+            }
+
+            // Following missing key in UserAttributes
+            // TODO: 2020-03-23 check with mP team
+//            userInfo.setEmail();
+//            userInfo.setDateOfBirth();
+//            userInfo.setEducation();
+//            userInfo.setEmailHash();
+//            userInfo.setFacebookId();
+//            userInfo.setJoinedAt();
+//            userInfo.setName();
+//            userInfo.setDetails();
+
+            userInfo.save(getContext());
+        }
+    }
+
+    @Override
+    public void onSetUserTag(String s, FilteredMParticleUser filteredMParticleUser) {
+
+    }
+
+    @Override
+    public void onSetUserAttributeList(String s, List<String> list, FilteredMParticleUser filteredMParticleUser) {
+
+    }
+
+    @Override
+    public void onSetAllUserAttributes(Map<String, String> map, Map<String, List<String>> map1, FilteredMParticleUser filteredMParticleUser) {
+
+    }
+
+    @Override
+    public boolean supportsAttributeLists() {
+        return false;
+    }
+
+    @Override
+    public void onConsentStateUpdated(ConsentState consentState, ConsentState consentState1, FilteredMParticleUser filteredMParticleUser) {
+
     }
 }

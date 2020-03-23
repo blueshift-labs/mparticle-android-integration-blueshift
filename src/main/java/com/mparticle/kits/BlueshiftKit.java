@@ -1,12 +1,18 @@
 package com.mparticle.kits;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.blueshift.Blueshift;
+import com.blueshift.BlueshiftConstants;
 import com.blueshift.BlueshiftLogger;
 import com.blueshift.model.Configuration;
+import com.mparticle.MPEvent;
 
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +36,7 @@ import java.util.Map;
  *  - ./src/main/AndroidManifest.xml
  *  - ./consumer-proguard.pro
  */
-public class BlueshiftKit extends KitIntegration {
+public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener {
     static final String BLUESHIFT_API_KEY = "blueshift_api_key";
     static final String APP_ICON_INT = "blueshift_app_icon";
     static final String PRODUCT_PAGE_CLASSNAME = "blueshift_product_page_classname";
@@ -73,7 +79,6 @@ public class BlueshiftKit extends KitIntegration {
         } catch (Exception e) {
             throw new IllegalArgumentException("Blueshift requires a valid app icon resource id");
         }
-
 
         // == Deeplink (Optional) ==
         Class productPageClass = getClassFromName(settings.get(PRODUCT_PAGE_CLASSNAME));
@@ -193,13 +198,60 @@ public class BlueshiftKit extends KitIntegration {
         return "Blueshift";
     }
 
-
-
     @Override
     public List<ReportingMessage> setOptOut(boolean optedOut) {
-        //TODO: Disable or enable your SDK when a user opts out.
-        //TODO: If your SDK can not be opted out of, return null
-        ReportingMessage optOutMessage = new ReportingMessage(this, ReportingMessage.MessageType.OPT_OUT, System.currentTimeMillis(), null);
         return null;
+    }
+
+    @Override
+    public List<ReportingMessage> leaveBreadcrumb(String s) {
+        return null;
+    }
+
+    @Override
+    public List<ReportingMessage> logError(String s, Map<String, String> map) {
+        return null;
+    }
+
+    @Override
+    public List<ReportingMessage> logException(Exception e, Map<String, String> map, String s) {
+        return null;
+    }
+
+    @Override
+    public List<ReportingMessage> logScreen(String screenName, Map<String, String> map) {
+        HashMap<String, Object> extras = new HashMap<>();
+        extras.put(BlueshiftConstants.KEY_SCREEN_VIEWED, screenName);
+
+        if (map != null) {
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                extras.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Blueshift.getInstance(getContext()).trackEvent(
+                BlueshiftConstants.EVENT_PAGE_LOAD, extras, false);
+
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public List<ReportingMessage> logEvent(@NonNull MPEvent event) {
+        HashMap<String, Object> extras = null;
+
+        if (event.getCustomAttributes() != null) {
+            extras = new HashMap<>();
+            for (Map.Entry<String, String> entry : event.getCustomAttributes().entrySet()) {
+                extras.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Blueshift.getInstance(getContext()).trackEvent(
+                event.getEventName(), extras, false);
+
+        List<ReportingMessage> messages = new LinkedList<>();
+        messages.add(ReportingMessage.fromEvent(this, event));
+        return messages;
     }
 }

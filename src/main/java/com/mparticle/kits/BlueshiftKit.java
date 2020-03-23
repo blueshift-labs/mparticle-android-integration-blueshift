@@ -1,6 +1,8 @@
 package com.mparticle.kits;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -8,6 +10,7 @@ import android.text.TextUtils;
 import com.blueshift.Blueshift;
 import com.blueshift.BlueshiftConstants;
 import com.blueshift.BlueshiftLogger;
+import com.blueshift.fcm.BlueshiftMessagingService;
 import com.blueshift.model.Configuration;
 import com.blueshift.model.UserInfo;
 import com.mparticle.MPEvent;
@@ -39,7 +42,7 @@ import java.util.Map;
  *  - ./src/main/AndroidManifest.xml
  *  - ./consumer-proguard.pro
  */
-public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener, KitIntegration.UserAttributeListener {
+public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener, KitIntegration.UserAttributeListener, KitIntegration.PushListener {
     static final String BLUESHIFT_API_KEY = "blueshift_api_key";
     static final String APP_ICON_INT = "blueshift_app_icon";
     static final String PRODUCT_PAGE_CLASSNAME = "blueshift_product_page_classname";
@@ -344,5 +347,31 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
     @Override
     public void onConsentStateUpdated(ConsentState consentState, ConsentState consentState1, FilteredMParticleUser filteredMParticleUser) {
 
+    }
+
+    @Override
+    public boolean willHandlePushMessage(Intent intent) {
+        return true;
+    }
+
+    @Override
+    public void onPushMessageReceived(Context context, Intent intent) {
+        Map<String, String> map = new HashMap<>();
+        if (intent != null && intent.getExtras() != null) {
+            Bundle bundle = intent.getExtras();
+            for (String key : bundle.keySet()) {
+                String val = bundle.getString(key);
+                if (val != null) map.put(key, val);
+            }
+        }
+
+        // TODO: 2020-03-23 Make the method public
+        BlueshiftMessagingService service = new BlueshiftMessagingService();
+        service.handleDataMessage(map);
+    }
+
+    @Override
+    public boolean onPushRegistration(String s, String s1) {
+        return false;
     }
 }

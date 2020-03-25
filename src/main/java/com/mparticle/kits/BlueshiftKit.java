@@ -1,5 +1,6 @@
 package com.mparticle.kits;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import com.blueshift.Blueshift;
 import com.blueshift.BlueshiftConstants;
 import com.blueshift.BlueshiftLogger;
 import com.blueshift.fcm.BlueshiftMessagingService;
+import com.blueshift.inappmessage.InAppApiCallback;
 import com.blueshift.model.Configuration;
 import com.blueshift.model.UserInfo;
 import com.mparticle.MPEvent;
@@ -198,6 +200,24 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
 
         return value;
     }
+
+    // BEGIN - InApp Messages
+    public static void registerForInAppMessages(Activity activity) {
+        Blueshift.getInstance(activity).registerForInAppMessages(activity);
+    }
+
+    public static void unregisterForInAppMessages(Activity activity) {
+        Blueshift.getInstance(activity).unregisterForInAppMessages(activity);
+    }
+
+    public static void fetchInAppMessages(Context context, InAppApiCallback callback) {
+        Blueshift.getInstance(context).fetchInAppMessages(callback);
+    }
+
+    public static void displayInAppMessage(Context context) {
+        Blueshift.getInstance(context).displayInAppMessages();
+    }
+    // END - InApp Messages
 
     @Override
     public String getName() {

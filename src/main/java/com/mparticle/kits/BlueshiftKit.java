@@ -3,6 +3,7 @@ package com.mparticle.kits;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -11,13 +12,13 @@ import android.text.TextUtils;
 import com.blueshift.Blueshift;
 import com.blueshift.BlueshiftConstants;
 import com.blueshift.BlueshiftLogger;
-import com.blueshift.fcm.BlueshiftMessagingService;
 import com.blueshift.inappmessage.InAppApiCallback;
 import com.blueshift.model.Configuration;
 import com.blueshift.model.UserInfo;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
 import com.mparticle.consent.ConsentState;
+import com.mparticle.identity.MParticleUser;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -44,9 +45,8 @@ import java.util.Map;
  *  - ./src/main/AndroidManifest.xml
  *  - ./consumer-proguard.pro
  */
-public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener, KitIntegration.UserAttributeListener, KitIntegration.PushListener {
+public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener, KitIntegration.UserAttributeListener, KitIntegration.IdentityListener, KitIntegration.PushListener {
     static final String BLUESHIFT_API_KEY = "blueshift_api_key";
-    static final String APP_ICON_INT = "blueshift_app_icon";
     static final String PRODUCT_PAGE_CLASSNAME = "blueshift_product_page_classname";
     static final String CART_PAGE_CLASSNAME = "blueshift_cart_page_classname";
     static final String PROMO_PAGE_CLASSNAME = "blueshift_promo_page_classname";
@@ -77,13 +77,8 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
         }
 
         try {
-            String appIcon = settings.get(APP_ICON_INT);
-            int appIconInt = appIcon != null ? Integer.parseInt(appIcon) : -1;
-            if (appIconInt != -1) {
-                configuration.setAppIcon(appIconInt);
-            } else {
-                throw new IllegalArgumentException("Blueshift requires a valid app icon resource id");
-            }
+            ApplicationInfo applicationInfo = getContext().getApplicationInfo();
+            configuration.setAppIcon(applicationInfo.icon);
         } catch (Exception e) {
             throw new IllegalArgumentException("Blueshift requires a valid app icon resource id");
         }
@@ -329,17 +324,6 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
                     break;
             }
 
-            // Following missing key in UserAttributes
-            // TODO: 2020-03-23 check with mP team
-//            userInfo.setEmail();
-//            userInfo.setDateOfBirth();
-//            userInfo.setEducation();
-//            userInfo.setEmailHash();
-//            userInfo.setFacebookId();
-//            userInfo.setJoinedAt();
-//            userInfo.setName();
-//            userInfo.setDetails();
-
             userInfo.save(getContext());
         }
     }
@@ -385,13 +369,60 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
             }
         }
 
-        // TODO: 2020-03-23 Make the method public
-        BlueshiftMessagingService service = new BlueshiftMessagingService();
-        service.handleDataMessage(map);
+//        BlueshiftMessagingService service = new BlueshiftMessagingService();
+//        service.handleDataMessage(getContext(), map);
     }
 
     @Override
     public boolean onPushRegistration(String s, String s1) {
         return false;
+    }
+
+    @Override
+    public void onIdentifyCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    @Override
+    public void onLoginCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    @Override
+    public void onLogoutCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    @Override
+    public void onModifyCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {
+        updateUser(mParticleUser);
+    }
+
+    @Override
+    public void onUserIdentified(MParticleUser mParticleUser) {
+        updateUser(mParticleUser);
+    }
+
+    private void updateUser(MParticleUser user) {
+        if (user != null) {
+            UserInfo userInfo = UserInfo.getInstance(getContext());
+
+            String email = user.getUserIdentities().get(MParticle.IdentityType.Email);
+            userInfo.setEmail(email);
+
+            String customerId = user.getUserIdentities().get(MParticle.IdentityType.CustomerId);
+            userInfo.setRetailerCustomerId(customerId);
+
+            String fbId = user.getUserIdentities().get(MParticle.IdentityType.Facebook);
+            userInfo.setFacebookId(fbId);
+
+            userInfo.save(getContext());
+
+            // whenever user is updated, and email is non-empty, we should call an identify
+            if (email != null) {
+                Blueshift.getInstance(getContext())
+                        .identifyUserByEmail(email, null, false);
+            }
+        }
     }
 }

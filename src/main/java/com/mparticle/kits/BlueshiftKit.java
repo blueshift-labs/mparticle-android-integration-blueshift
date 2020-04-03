@@ -50,13 +50,13 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
     static final String PRODUCT_PAGE_CLASSNAME = "blueshift_product_page_classname";
     static final String CART_PAGE_CLASSNAME = "blueshift_cart_page_classname";
     static final String PROMO_PAGE_CLASSNAME = "blueshift_promo_page_classname";
-    static final String NOTIFICATION_SMALL_ICON_INT = "blueshift_notification_small_icon";
-    static final String NOTIFICATION_LARGE_ICON_INT = "blueshift_notification_large_icon";
-    static final String NOTIFICATION_COLOR_INT = "blueshift_notification_color";
+    static final String NOTIFICATION_SMALL_ICON_NAME = "blueshift_notification_small_icon";
+    static final String NOTIFICATION_LARGE_ICON_NAME = "blueshift_notification_large_icon";
+    static final String NOTIFICATION_COLOR_NAME = "blueshift_notification_color";
     static final String NOTIFICATION_CHANEL_ID = "blueshift_notification_chanel_id";
     static final String NOTIFICATION_CHANEL_NAME = "blueshift_notification_chanel_name";
     static final String NOTIFICATION_CHANEL_DESCRIPTION = "blueshift_notification_chanel_description";
-    static final String DIALOG_THEME_INT = "blueshift_dialog_theme";
+    static final String DIALOG_THEME_NAME = "blueshift_dialog_theme";
     static final String BATCH_INTERVAL_MILLIS_LONG = "blueshift_batch_interval";
     static final String IN_APP_ENABLE_BOOL = "blueshift_in_app_enable";
     static final String IN_APP_JAVASCRIPT_ENABLE_BOOL = "blueshift_in_app_javascript_enable";
@@ -92,13 +92,13 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
         configuration.setOfferDisplayPage(promoPageClass);
 
         // == Notification (Optional) ==
-        int largeIconInt = getIntFromString(settings.get(NOTIFICATION_LARGE_ICON_INT));
+        int largeIconInt = getDrawableIdFromString(settings.get(NOTIFICATION_LARGE_ICON_NAME));
         if (largeIconInt != -1) configuration.setLargeIconResId(largeIconInt);
-        int smallIconInt = getIntFromString(settings.get(NOTIFICATION_SMALL_ICON_INT));
+        int smallIconInt = getDrawableIdFromString(settings.get(NOTIFICATION_SMALL_ICON_NAME));
         if (smallIconInt != -1) configuration.setSmallIconResId(smallIconInt);
-        int notificationColor = getIntFromString(settings.get(NOTIFICATION_COLOR_INT));
+        int notificationColor = getDrawableIdFromString(settings.get(NOTIFICATION_COLOR_NAME));
         if (notificationColor != -1) configuration.setNotificationColor(notificationColor);
-        int themeRes = getIntFromString(DIALOG_THEME_INT);
+        int themeRes = getStyleIdFromString(settings.get(DIALOG_THEME_NAME));
         if (themeRes != -1) configuration.setDialogTheme(themeRes); // for dialog type notifications
 
         // == Notification Channel (Android O and above) ==
@@ -140,6 +140,28 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
         return null;
     }
 
+    private int getResourceIdFromString(String resourceType, String resourceName) {
+        try {
+            if (!TextUtils.isEmpty(resourceType) && !TextUtils.isEmpty(resourceName)) {
+                return getContext()
+                        .getResources()
+                        .getIdentifier(resourceName, resourceType, getContext().getPackageName());
+            }
+        } catch (Exception e) {
+            BlueshiftLogger.e(TAG, e);
+        }
+
+        return -1;
+    }
+
+    private int getDrawableIdFromString(String resourceName) {
+        return getResourceIdFromString("drawable", resourceName);
+    }
+
+    private int getStyleIdFromString(String resourceName) {
+        return getResourceIdFromString("style", resourceName);
+    }
+
     private Class getClassFromName(String classname) {
         Class<?> clazz = null;
 
@@ -160,20 +182,6 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
         try {
             if (TextUtils.isDigitsOnly(longString)) {
                 value = Long.parseLong(longString);
-            }
-        } catch (Exception e) {
-            BlueshiftLogger.e(TAG, e);
-        }
-
-        return value;
-    }
-
-    private int getIntFromString(String intString) {
-        int value = -1;
-
-        try {
-            if (TextUtils.isDigitsOnly(intString)) {
-                value = Integer.parseInt(intString);
             }
         } catch (Exception e) {
             BlueshiftLogger.e(TAG, e);

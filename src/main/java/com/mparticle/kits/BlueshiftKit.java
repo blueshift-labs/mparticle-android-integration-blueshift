@@ -17,9 +17,11 @@ import com.blueshift.model.Configuration;
 import com.blueshift.model.UserInfo;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
+import com.mparticle.commerce.CommerceEvent;
 import com.mparticle.consent.ConsentState;
 import com.mparticle.identity.MParticleUser;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,7 +47,13 @@ import java.util.Map;
  *  - ./src/main/AndroidManifest.xml
  *  - ./consumer-proguard.pro
  */
-public class BlueshiftKit extends KitIntegration implements KitIntegration.EventListener, KitIntegration.UserAttributeListener, KitIntegration.IdentityListener, KitIntegration.PushListener {
+public class BlueshiftKit extends KitIntegration implements
+        KitIntegration.EventListener,
+        KitIntegration.CommerceListener,
+        KitIntegration.UserAttributeListener,
+        KitIntegration.PushListener,
+        KitIntegration.IdentityListener {
+
     static final String BLUESHIFT_API_KEY = "blueshift_api_key";
     static final String PRODUCT_PAGE_CLASSNAME = "blueshift_product_page_classname";
     static final String CART_PAGE_CLASSNAME = "blueshift_cart_page_classname";
@@ -227,6 +235,22 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
         return "Blueshift";
     }
 
+    // ** event logging support methods **
+
+    private HashMap<String, Object> getExtras(Map<String, String> extras) {
+        HashMap<String, Object> newExtras = new HashMap<>();
+
+        if (extras != null) {
+            for (Map.Entry<String, String> entry : extras.entrySet()) {
+                newExtras.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return newExtras;
+    }
+
+    // ** KitIntegration.EventListener **
+
     @Override
     public List<ReportingMessage> setOptOut(boolean optedOut) {
         return null;
@@ -249,17 +273,11 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
 
     @Override
     public List<ReportingMessage> logScreen(String screenName, Map<String, String> map) {
-        HashMap<String, Object> extras = new HashMap<>();
+        HashMap<String, Object> extras = getExtras(map);
         extras.put(BlueshiftConstants.KEY_SCREEN_VIEWED, screenName);
 
-        if (map != null) {
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                extras.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        Blueshift.getInstance(getContext()).trackEvent(
-                BlueshiftConstants.EVENT_PAGE_LOAD, extras, false);
+        Blueshift.getInstance(getContext())
+                .trackEvent(BlueshiftConstants.EVENT_PAGE_LOAD, extras, false);
 
         return null;
     }
@@ -267,22 +285,39 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
     @Nullable
     @Override
     public List<ReportingMessage> logEvent(@NonNull MPEvent event) {
-        HashMap<String, Object> extras = null;
+        HashMap<String, Object> extras = getExtras(event.getCustomAttributes());
 
-        if (event.getCustomAttributes() != null) {
-            extras = new HashMap<>();
-            for (Map.Entry<String, String> entry : event.getCustomAttributes().entrySet()) {
-                extras.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        Blueshift.getInstance(getContext()).trackEvent(
-                event.getEventName(), extras, false);
+        Blueshift.getInstance(getContext())
+                .trackEvent(event.getEventName(), extras, false);
 
         List<ReportingMessage> messages = new LinkedList<>();
         messages.add(ReportingMessage.fromEvent(this, event));
         return messages;
     }
+
+    // ** KitIntegration.CommerceListener **
+
+    @Override
+    public List<ReportingMessage> logLtvIncrease(BigDecimal bigDecimal, BigDecimal bigDecimal1, String s, Map<String, String> map) {
+        return null;
+    }
+
+    @Override
+    public List<ReportingMessage> logEvent(CommerceEvent commerceEvent) {
+        HashMap<String, Object> extras = getExtras(commerceEvent.getCustomAttributes());
+
+        String eventName = commerceEvent.getEventName();
+        if (eventName != null) {
+            Blueshift.getInstance(getContext())
+                    .trackEvent(eventName, extras, false);
+        }
+
+        List<ReportingMessage> messages = new LinkedList<>();
+        messages.add(ReportingMessage.fromEvent(this, commerceEvent));
+        return messages;
+    }
+
+    // ** KitIntegration.UserAttributeListener **
 
     @Override
     public void onIncrementUserAttribute(String s, int i, String s1, FilteredMParticleUser filteredMParticleUser) {
@@ -361,6 +396,8 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
 
     }
 
+    // ** KitIntegration.PushListener **
+
     @Override
     public boolean willHandlePushMessage(Intent intent) {
         return true;
@@ -385,6 +422,8 @@ public class BlueshiftKit extends KitIntegration implements KitIntegration.Event
     public boolean onPushRegistration(String s, String s1) {
         return false;
     }
+
+    // ** KitIntegration.IdentityListener **
 
     @Override
     public void onIdentifyCompleted(MParticleUser mParticleUser, FilteredIdentityApiRequest filteredIdentityApiRequest) {

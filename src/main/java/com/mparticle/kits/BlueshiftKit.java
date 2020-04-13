@@ -4,17 +4,17 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 
 import com.blueshift.Blueshift;
 import com.blueshift.BlueshiftConstants;
 import com.blueshift.BlueshiftLogger;
+import com.blueshift.fcm.BlueshiftMessagingService;
 import com.blueshift.inappmessage.InAppApiCallback;
 import com.blueshift.model.Configuration;
 import com.blueshift.model.UserInfo;
+import com.blueshift.util.BlueshiftUtils;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
 import com.mparticle.commerce.CommerceEvent;
@@ -54,103 +54,63 @@ public class BlueshiftKit extends KitIntegration implements
         KitIntegration.PushListener,
         KitIntegration.IdentityListener {
 
-    static final String BLUESHIFT_API_KEY = "blueshift_api_key";
-    static final String PRODUCT_PAGE_CLASSNAME = "blueshift_product_page_classname";
-    static final String CART_PAGE_CLASSNAME = "blueshift_cart_page_classname";
-    static final String PROMO_PAGE_CLASSNAME = "blueshift_promo_page_classname";
-    static final String NOTIFICATION_SMALL_ICON_NAME = "blueshift_notification_small_icon";
-    static final String NOTIFICATION_LARGE_ICON_NAME = "blueshift_notification_large_icon";
-    static final String NOTIFICATION_COLOR_NAME = "blueshift_notification_color";
-    static final String NOTIFICATION_CHANEL_ID = "blueshift_notification_chanel_id";
-    static final String NOTIFICATION_CHANEL_NAME = "blueshift_notification_chanel_name";
-    static final String NOTIFICATION_CHANEL_DESCRIPTION = "blueshift_notification_chanel_description";
-    static final String DIALOG_THEME_NAME = "blueshift_dialog_theme";
-    static final String BATCH_INTERVAL_MILLIS_LONG = "blueshift_batch_interval";
-    static final String IN_APP_ENABLE_BOOL = "blueshift_in_app_enable";
-    static final String IN_APP_JAVASCRIPT_ENABLE_BOOL = "blueshift_in_app_javascript_enable";
-    static final String IN_APP_MANUAL_MODE_ENABLE_BOOL = "blueshift_in_app_manual_mode_enable";
-
     private static final String TAG = "BlueshiftKit";
+    private static final String BLUESHIFT_EVENT_API_KEY = "eventApiKey";
+
+    private static Configuration blueshiftConfiguration;
+
+    public static void setBlueshiftConfig(@NonNull Configuration config) {
+        blueshiftConfiguration = config;
+    }
+
+    public static void registerForInAppMessages(@NonNull Activity activity) {
+        Blueshift.getInstance(activity).registerForInAppMessages(activity);
+    }
+
+    public static void unregisterForInAppMessages(@NonNull Activity activity) {
+        Blueshift.getInstance(activity).unregisterForInAppMessages(activity);
+    }
+
+    public static void fetchInAppMessages(@NonNull Context context, InAppApiCallback callback) {
+        Blueshift.getInstance(context).fetchInAppMessages(callback);
+    }
+
+    public static void displayInAppMessage(@NonNull Context context) {
+        Blueshift.getInstance(context).displayInAppMessages();
+    }
 
     @Override
     protected List<ReportingMessage> onKitCreate(Map<String, String> settings, Context context) {
-        Configuration configuration = new Configuration();
+        if (blueshiftConfiguration == null) {
+            BlueshiftLogger.d(TAG, "Blueshift configuration is not provided. Using the default one.");
+            blueshiftConfiguration = new Configuration();
+        }
 
-        // == Mandatory Settings ==
-        String apiKey = settings.get(BLUESHIFT_API_KEY);
+        String apiKey = settings.get(BLUESHIFT_EVENT_API_KEY);
         if (KitUtils.isEmpty(apiKey)) {
             throw new IllegalArgumentException("Blueshift requires a valid API key");
         } else {
-            configuration.setApiKey(apiKey);
+            blueshiftConfiguration.setApiKey(apiKey);
         }
 
-        try {
-            ApplicationInfo applicationInfo = getContext().getApplicationInfo();
-            configuration.setAppIcon(applicationInfo.icon);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Blueshift requires a valid app icon resource id");
+        // set app-icon as notification icon if not set
+        if (blueshiftConfiguration.getAppIcon() == 0) {
+            try {
+                ApplicationInfo applicationInfo = getContext().getApplicationInfo();
+                blueshiftConfiguration.setAppIcon(applicationInfo.icon);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Blueshift requires a valid app icon resource id");
+            }
         }
 
-        // == Deeplink (Optional) ==
-        Class productPageClass = getClassFromName(settings.get(PRODUCT_PAGE_CLASSNAME));
-        configuration.setProductPage(productPageClass);
-        Class cartPageClass = getClassFromName(settings.get(CART_PAGE_CLASSNAME));
-        configuration.setCartPage(cartPageClass);
-        Class promoPageClass = getClassFromName(settings.get(PROMO_PAGE_CLASSNAME));
-        configuration.setOfferDisplayPage(promoPageClass);
-
-        // == Notification (Optional) ==
-        int largeIconInt = getDrawableIdFromString(settings.get(NOTIFICATION_LARGE_ICON_NAME));
-        if (largeIconInt != -1) configuration.setLargeIconResId(largeIconInt);
-        int smallIconInt = getDrawableIdFromString(settings.get(NOTIFICATION_SMALL_ICON_NAME));
-        if (smallIconInt != -1) configuration.setSmallIconResId(smallIconInt);
-        int notificationColor = getDrawableIdFromString(settings.get(NOTIFICATION_COLOR_NAME));
-        if (notificationColor != -1) configuration.setNotificationColor(notificationColor);
-        int themeRes = getStyleIdFromString(settings.get(DIALOG_THEME_NAME));
-        if (themeRes != -1) configuration.setDialogTheme(themeRes); // for dialog type notifications
-
-        // == Notification Channel (Android O and above) ==
-        // Optional: if not set and not found in payload, SDK will assign a default id (bsft_channel_General).
-        String channelId = settings.get(NOTIFICATION_CHANEL_ID);
-        configuration.setDefaultNotificationChannelId(channelId);
-        // Optional: if not set and not found in payload, SDK will assign a default name (General).
-        String channelName = settings.get(NOTIFICATION_CHANEL_NAME);
-        configuration.setDefaultNotificationChannelName(channelName);
-        // optional: only set if present in payload or config object
-        String channelDescription = settings.get(NOTIFICATION_CHANEL_DESCRIPTION);
-        configuration.setDefaultNotificationChannelDescription(channelDescription);
-
-        // == Batched Events (Optional) ==
-        /*
-         * This is the time interval used for batching events which are then sent to
-         * Blueshift using the bulk events api call. It defaults to 30 min if not set.
-         *
-         * It is recommended to use one of the following for API < 19 devices.
-         * AlarmManager.INTERVAL_FIFTEEN_MINUTES
-         * AlarmManager.INTERVAL_HALF_HOUR
-         * AlarmManager.INTERVAL_HOUR
-         * AlarmManager.INTERVAL_HALF_DAY
-         * AlarmManager.INTERVAL_DAY
-         */
-        long interval = getLongFromString(settings.get(BATCH_INTERVAL_MILLIS_LONG));
-        configuration.setBatchInterval(interval);
-
-        // == Enable In-app Messaging Feature (Optional) ==
-        boolean isInAppEnabled = getBooleanFromString(settings.get(IN_APP_ENABLE_BOOL));
-        configuration.setInAppEnabled(isInAppEnabled);
-        boolean isInAppJsEnabled = getBooleanFromString(settings.get(IN_APP_JAVASCRIPT_ENABLE_BOOL));
-        configuration.setJavaScriptForInAppWebViewEnabled(isInAppJsEnabled);
-        boolean isInAppManualModeEnabled = getBooleanFromString(settings.get(IN_APP_MANUAL_MODE_ENABLE_BOOL));
-        configuration.setJavaScriptForInAppWebViewEnabled(isInAppManualModeEnabled);
-
-        Blueshift.getInstance(context).initialize(configuration);
+        Blueshift.getInstance(context).initialize(blueshiftConfiguration);
 
         return null;
     }
 
     private int getResourceIdFromString(String resourceType, String resourceName) {
         try {
-            if (!TextUtils.isEmpty(resourceType) && !TextUtils.isEmpty(resourceName)) {
+            if (!KitUtils.isEmpty(resourceType) && !KitUtils.isEmpty(resourceName)) {
                 return getContext()
                         .getResources()
                         .getIdentifier(resourceName, resourceType, getContext().getPackageName());
@@ -173,7 +133,7 @@ public class BlueshiftKit extends KitIntegration implements
     private Class getClassFromName(String classname) {
         Class<?> clazz = null;
 
-        if (!TextUtils.isEmpty(classname)) {
+        if (!KitUtils.isEmpty(classname)) {
             try {
                 clazz = Class.forName(classname);
             } catch (ClassNotFoundException e) {
@@ -188,9 +148,7 @@ public class BlueshiftKit extends KitIntegration implements
         long value = -1;
 
         try {
-            if (TextUtils.isDigitsOnly(longString)) {
-                value = Long.parseLong(longString);
-            }
+            value = Long.parseLong(longString);
         } catch (Exception e) {
             BlueshiftLogger.e(TAG, e);
         }
@@ -202,7 +160,7 @@ public class BlueshiftKit extends KitIntegration implements
         boolean value = false;
 
         try {
-            if (!TextUtils.isEmpty(boolString)) {
+            if (!KitUtils.isEmpty(boolString)) {
                 value = Boolean.valueOf(boolString);
             }
         } catch (Exception e) {
@@ -211,24 +169,6 @@ public class BlueshiftKit extends KitIntegration implements
 
         return value;
     }
-
-    // BEGIN - InApp Messages
-    public static void registerForInAppMessages(Activity activity) {
-        Blueshift.getInstance(activity).registerForInAppMessages(activity);
-    }
-
-    public static void unregisterForInAppMessages(Activity activity) {
-        Blueshift.getInstance(activity).unregisterForInAppMessages(activity);
-    }
-
-    public static void fetchInAppMessages(Context context, InAppApiCallback callback) {
-        Blueshift.getInstance(context).fetchInAppMessages(callback);
-    }
-
-    public static void displayInAppMessage(Context context) {
-        Blueshift.getInstance(context).displayInAppMessages();
-    }
-    // END - InApp Messages
 
     @Override
     public String getName() {
@@ -279,7 +219,9 @@ public class BlueshiftKit extends KitIntegration implements
         Blueshift.getInstance(getContext())
                 .trackEvent(BlueshiftConstants.EVENT_PAGE_LOAD, extras, false);
 
-        return null;
+        List<ReportingMessage> messages = new LinkedList<>();
+        messages.add(new ReportingMessage(this, ReportingMessage.MessageType.SCREEN_VIEW, System.currentTimeMillis(), map));
+        return messages;
     }
 
     @Nullable
@@ -400,27 +342,22 @@ public class BlueshiftKit extends KitIntegration implements
 
     @Override
     public boolean willHandlePushMessage(Intent intent) {
-        return true;
+        Configuration config = BlueshiftUtils.getConfiguration(getContext());
+        if (config != null && !config.isPushEnabled()) {
+            return false;
+        }
+
+        return BlueshiftMessagingService.isBlueshiftPush(getContext(), intent);
     }
 
     @Override
     public void onPushMessageReceived(Context context, Intent intent) {
-        Map<String, String> map = new HashMap<>();
-        if (intent != null && intent.getExtras() != null) {
-            Bundle bundle = intent.getExtras();
-            for (String key : bundle.keySet()) {
-                String val = bundle.getString(key);
-                if (val != null) map.put(key, val);
-            }
-        }
-
-//        BlueshiftMessagingService service = new BlueshiftMessagingService();
-//        service.handleDataMessage(getContext(), map);
+        BlueshiftMessagingService.handlePushMessage(context, intent);
     }
 
     @Override
-    public boolean onPushRegistration(String s, String s1) {
-        return false;
+    public boolean onPushRegistration(String instanceId, String senderId) {
+        return false; // Blueshift depends on mP to do the push registration
     }
 
     // ** KitIntegration.IdentityListener **

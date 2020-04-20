@@ -56,6 +56,7 @@ public class BlueshiftKit extends KitIntegration implements
 
     private static final String TAG = "BlueshiftKit";
     private static final String BLUESHIFT_EVENT_API_KEY = "eventApiKey";
+    private static final String PREF_KEY_CURRENT_EMAIL = "blueshift.user.email";
 
     private static Configuration blueshiftConfiguration;
 
@@ -356,11 +357,17 @@ public class BlueshiftKit extends KitIntegration implements
 
             userInfo.save(getContext());
 
-            // whenever user is updated, and email is non-empty, we should call an identify
-            if (email != null) {
-                Blueshift.getInstance(getContext())
+            // whenever user is updated, and email is changed, we should call an identify
+            if (isNewEmail(email)) {
+                Blueshift
+                        .getInstance(getContext())
                         .identifyUserByEmail(email, null, false);
             }
         }
+    }
+
+    private boolean isNewEmail(String newEmail) {
+        String email = getKitPreferences().getString(PREF_KEY_CURRENT_EMAIL, null);
+        return (email != null && !email.equals(newEmail)) || (email == null && newEmail != null);
     }
 }

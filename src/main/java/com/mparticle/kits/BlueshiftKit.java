@@ -201,23 +201,37 @@ public class BlueshiftKit extends KitIntegration implements
 
     @Override
     public void onIncrementUserAttribute(String s, int i, String s1, FilteredMParticleUser filteredMParticleUser) {
-
+        updateUserAttributes(filteredMParticleUser);
     }
 
     @Override
     public void onRemoveUserAttribute(String key, FilteredMParticleUser filteredMParticleUser) {
-        updateUserAttribute(key, null);
+        updateUserAttributes(filteredMParticleUser);
     }
 
     @Override
     public void onSetUserAttribute(String key, Object value, FilteredMParticleUser filteredMParticleUser) {
-        updateUserAttribute(key, value);
+        updateUserAttributes(filteredMParticleUser);
     }
 
-    private void updateUserAttribute(String key, Object value) {
-        if (key != null) {
-            UserInfo userInfo = UserInfo.getInstance(getContext());
+    private void updateUserAttributes(FilteredMParticleUser filteredMParticleUser) {
+        try {
+            if (filteredMParticleUser != null) {
+                Map<String, Object> map = filteredMParticleUser.getUserAttributes();
+                UserInfo userInfo = UserInfo.getInstance(getContext());
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    if (entry != null)
+                        updateUserAttribute(entry.getKey(), entry.getValue(), userInfo);
+                }
+                userInfo.save(getContext());
+            }
+        } catch (Exception e) {
+            BlueshiftLogger.e(TAG, e);
+        }
+    }
 
+    private void updateUserAttribute(String key, Object value, UserInfo userInfo) {
+        if (key != null && userInfo != null) {
             switch (key) {
                 case MParticle.UserAttributes.FIRSTNAME:
                     if (value != null) userInfo.setFirstname(String.valueOf(value));
@@ -250,8 +264,6 @@ public class BlueshiftKit extends KitIntegration implements
                     // No setter
                     break;
             }
-
-            userInfo.save(getContext());
         }
     }
 

@@ -108,68 +108,6 @@ public class BlueshiftKit extends KitIntegration implements
         return null;
     }
 
-    private int getResourceIdFromString(String resourceType, String resourceName) {
-        try {
-            if (!KitUtils.isEmpty(resourceType) && !KitUtils.isEmpty(resourceName)) {
-                return getContext()
-                        .getResources()
-                        .getIdentifier(resourceName, resourceType, getContext().getPackageName());
-            }
-        } catch (Exception e) {
-            BlueshiftLogger.e(TAG, e);
-        }
-
-        return -1;
-    }
-
-    private int getDrawableIdFromString(String resourceName) {
-        return getResourceIdFromString("drawable", resourceName);
-    }
-
-    private int getStyleIdFromString(String resourceName) {
-        return getResourceIdFromString("style", resourceName);
-    }
-
-    private Class getClassFromName(String classname) {
-        Class<?> clazz = null;
-
-        if (!KitUtils.isEmpty(classname)) {
-            try {
-                clazz = Class.forName(classname);
-            } catch (ClassNotFoundException e) {
-                BlueshiftLogger.e(TAG, e);
-            }
-        }
-
-        return clazz;
-    }
-
-    private long getLongFromString(String longString) {
-        long value = -1;
-
-        try {
-            value = Long.parseLong(longString);
-        } catch (Exception e) {
-            BlueshiftLogger.e(TAG, e);
-        }
-
-        return value;
-    }
-
-    private boolean getBooleanFromString(String boolString) {
-        boolean value = false;
-
-        try {
-            if (!KitUtils.isEmpty(boolString)) {
-                value = Boolean.valueOf(boolString);
-            }
-        } catch (Exception e) {
-            BlueshiftLogger.e(TAG, e);
-        }
-
-        return value;
-    }
-
     @Override
     public String getName() {
         return "Blueshift";
@@ -267,15 +205,19 @@ public class BlueshiftKit extends KitIntegration implements
     }
 
     @Override
-    public void onRemoveUserAttribute(String s, FilteredMParticleUser filteredMParticleUser) {
-
+    public void onRemoveUserAttribute(String key, FilteredMParticleUser filteredMParticleUser) {
+        updateUserAttribute(key, null);
     }
 
     @Override
     public void onSetUserAttribute(String key, Object value, FilteredMParticleUser filteredMParticleUser) {
-        UserInfo userInfo = UserInfo.getInstance(getContext());
+        updateUserAttribute(key, value);
+    }
 
+    private void updateUserAttribute(String key, Object value) {
         if (key != null) {
+            UserInfo userInfo = UserInfo.getInstance(getContext());
+
             switch (key) {
                 case MParticle.UserAttributes.FIRSTNAME:
                     if (value != null) userInfo.setFirstname(String.valueOf(value));
@@ -347,7 +289,7 @@ public class BlueshiftKit extends KitIntegration implements
             return false;
         }
 
-        return BlueshiftMessagingService.isBlueshiftPush(getContext(), intent);
+        return BlueshiftMessagingService.isBlueshiftPush(intent);
     }
 
     @Override

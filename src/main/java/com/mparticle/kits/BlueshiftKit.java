@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -57,6 +59,10 @@ public class BlueshiftKit extends KitIntegration implements
     private static final String TAG = "BlueshiftKit";
     private static final String BLUESHIFT_EVENT_API_KEY = "eventApiKey";
     private static final String PREF_KEY_CURRENT_EMAIL = "blueshift.user.email";
+
+    private static final String BSFT_MESSAGE_UUID = "bsft_message_uuid";
+    private static final String BSFT_MESSAGE = "message";
+    private static final String BSFT_SILENT_PUSH = "silent_push";
 
     private static Configuration blueshiftConfiguration;
 
@@ -302,7 +308,11 @@ public class BlueshiftKit extends KitIntegration implements
             return false;
         }
 
-        return BlueshiftMessagingService.isBlueshiftPush(intent);
+        Bundle bundle = intent != null ? intent.getExtras() : null;
+        Set<String> keys = bundle != null ? bundle.keySet() : null;
+        return keys != null
+                && keys.contains(BSFT_MESSAGE_UUID)
+                && (keys.contains(BSFT_MESSAGE) || keys.contains(BSFT_SILENT_PUSH));
     }
 
     @Override

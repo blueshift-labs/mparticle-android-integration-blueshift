@@ -32,18 +32,13 @@ public class MainApplication extends Application implements TaskFailureListener,
         // in-app
         configuration.setInAppEnabled(true);
         configuration.setJavaScriptForInAppWebViewEnabled(true);
+        configuration.setInAppBackgroundFetchEnabled(true);
 
         BlueshiftKit.setBlueshiftConfig(configuration);
-
-        IdentityApiRequest identityApiRequest = IdentityApiRequest.withEmptyUser()
-                .email("rahulbsft@mp.com")
-                .customerId("009")
-                .build();
 
         MParticleOptions options = MParticleOptions.builder(this)
                 .credentials("us1-43053bdc5d8a294e89944b82388e2373", "QC9wpXr707rKlvqI88pnghJOx5c8sWRNvEgweg-CSl3c3qQ1SnFxmbcnSDnmeoai")
                 .logLevel(MParticle.LogLevel.VERBOSE)
-                .identify(identityApiRequest)
                 .identifyTask(
                         new BaseIdentityTask()
                                 .addFailureListener(this)

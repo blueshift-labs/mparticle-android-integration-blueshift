@@ -61,8 +61,14 @@ public class BlueshiftKit extends KitIntegration implements
     private static final String PREF_KEY_CURRENT_EMAIL = "blueshift.user.email";
 
     private static final String BSFT_MESSAGE_UUID = "bsft_message_uuid";
-    private static final String BSFT_MESSAGE = "message";
-    private static final String BSFT_SILENT_PUSH = "silent_push";
+
+    private static final String BSFT_USER_AGE = "age";
+    private static final String BSFT_USER__ADDR = "address";
+    private static final String BSFT_USER__MOBL = "mobile";
+    private static final String BSFT_USER__CITY = "city";
+    private static final String BSFT_USER__STATE = "state";
+    private static final String BSFT_USER__ZIP = "zip";
+    private static final String BSFT_USER__COUNTRY = "country";
 
     private static Configuration blueshiftConfiguration;
 
@@ -208,85 +214,32 @@ public class BlueshiftKit extends KitIntegration implements
 
     @Override
     public void onIncrementUserAttribute(String s, int i, String s1, FilteredMParticleUser filteredMParticleUser) {
-        updateUserAttributes(filteredMParticleUser);
+        updateBlueshiftUserInfo(filteredMParticleUser);
     }
 
     @Override
     public void onRemoveUserAttribute(String key, FilteredMParticleUser filteredMParticleUser) {
-        updateUserAttributes(filteredMParticleUser);
+        updateBlueshiftUserInfo(filteredMParticleUser);
     }
 
     @Override
     public void onSetUserAttribute(String key, Object value, FilteredMParticleUser filteredMParticleUser) {
-        updateUserAttributes(filteredMParticleUser);
-    }
-
-    private void updateUserAttributes(FilteredMParticleUser filteredMParticleUser) {
-        try {
-            if (filteredMParticleUser != null) {
-                Map<String, Object> map = filteredMParticleUser.getUserAttributes();
-                UserInfo userInfo = UserInfo.getInstance(getContext());
-                for (Map.Entry<String, Object> entry : map.entrySet()) {
-                    if (entry != null)
-                        updateUserAttribute(entry.getKey(), entry.getValue(), userInfo);
-                }
-                userInfo.save(getContext());
-            }
-        } catch (Exception e) {
-            BlueshiftLogger.e(TAG, e);
-        }
-    }
-
-    private void updateUserAttribute(String key, Object value, UserInfo userInfo) {
-        if (key != null && userInfo != null) {
-            switch (key) {
-                case MParticle.UserAttributes.FIRSTNAME:
-                    if (value != null) userInfo.setFirstname(String.valueOf(value));
-                    break;
-                case MParticle.UserAttributes.LASTNAME:
-                    if (value != null) userInfo.setLastname(String.valueOf(value));
-                    break;
-                case MParticle.UserAttributes.GENDER:
-                    if (value != null) userInfo.setGender(String.valueOf(value));
-                    break;
-                case MParticle.UserAttributes.AGE:
-                    // No setter
-                    break;
-                case MParticle.UserAttributes.ADDRESS:
-                    // No setter
-                    break;
-                case MParticle.UserAttributes.MOBILE_NUMBER:
-                    // No setter
-                    break;
-                case MParticle.UserAttributes.CITY:
-                    // No Setter
-                    break;
-                case MParticle.UserAttributes.STATE:
-                    // No setter
-                    break;
-                case MParticle.UserAttributes.ZIPCODE:
-                    // No setter
-                    break;
-                case MParticle.UserAttributes.COUNTRY:
-                    // No setter
-                    break;
-            }
-        }
+        updateBlueshiftUserInfo(filteredMParticleUser);
     }
 
     @Override
     public void onSetUserTag(String s, FilteredMParticleUser filteredMParticleUser) {
-
+        updateBlueshiftUserInfo(filteredMParticleUser);
     }
 
     @Override
     public void onSetUserAttributeList(String s, List<String> list, FilteredMParticleUser filteredMParticleUser) {
-
+        updateBlueshiftUserInfo(filteredMParticleUser);
     }
 
     @Override
     public void onSetAllUserAttributes(Map<String, String> map, Map<String, List<String>> map1, FilteredMParticleUser filteredMParticleUser) {
-
+        updateBlueshiftUserInfo(filteredMParticleUser);
     }
 
     @Override
@@ -296,7 +249,90 @@ public class BlueshiftKit extends KitIntegration implements
 
     @Override
     public void onConsentStateUpdated(ConsentState consentState, ConsentState consentState1, FilteredMParticleUser filteredMParticleUser) {
+        updateBlueshiftUserInfo(filteredMParticleUser);
+    }
 
+    private void updateBlueshiftUserInfo(FilteredMParticleUser filteredMParticleUser) {
+        if (filteredMParticleUser != null) {
+            UserInfo userInfo = UserInfo.getInstance(getContext());
+
+            // identity
+            Map<MParticle.IdentityType, String> identities = filteredMParticleUser.getUserIdentities();
+
+            String customerId = identities.get(MParticle.IdentityType.CustomerId);
+            userInfo.setRetailerCustomerId(customerId);
+
+            String email = identities.get(MParticle.IdentityType.Email);
+            userInfo.setEmail(email);
+
+            String facebookId = identities.get(MParticle.IdentityType.Facebook);
+            userInfo.setFacebookId(facebookId);
+
+            // attributes
+            Map<String, Object> attributes = filteredMParticleUser.getUserAttributes();
+
+            Object firstName = attributes.get(MParticle.UserAttributes.FIRSTNAME);
+            if (firstName != null) {
+                userInfo.setFirstname(String.valueOf(firstName));
+            } else {
+                userInfo.setFirstname(null);
+            }
+
+            Object lastName = attributes.get(MParticle.UserAttributes.FIRSTNAME);
+            if (lastName != null) {
+                userInfo.setLastname(String.valueOf(lastName));
+            } else {
+                userInfo.setLastname(null);
+            }
+
+            Object gender = attributes.get(MParticle.UserAttributes.GENDER);
+            if (gender != null) {
+                userInfo.setGender(String.valueOf(gender));
+            } else {
+                userInfo.setGender(null);
+            }
+
+            HashMap<String, Object> extras = new HashMap<>();
+
+            Object age = attributes.get(MParticle.UserAttributes.AGE);
+            if (age != null) {
+                extras.put(BSFT_USER_AGE, age);
+            }
+
+            Object address = attributes.get(MParticle.UserAttributes.ADDRESS);
+            if (address != null) {
+                extras.put(BSFT_USER__ADDR, address);
+            }
+
+            Object mobile = attributes.get(MParticle.UserAttributes.MOBILE_NUMBER);
+            if (mobile != null) {
+                extras.put(BSFT_USER__MOBL, mobile);
+            }
+
+            Object city = attributes.get(MParticle.UserAttributes.CITY);
+            if (city != null) {
+                extras.put(BSFT_USER__CITY, city);
+            }
+
+            Object state = attributes.get(MParticle.UserAttributes.STATE);
+            if (state != null) {
+                extras.put(BSFT_USER__STATE, state);
+            }
+
+            Object zip = attributes.get(MParticle.UserAttributes.ZIPCODE);
+            if (zip != null) {
+                extras.put(BSFT_USER__ZIP, zip);
+            }
+
+            Object country = attributes.get(MParticle.UserAttributes.COUNTRY);
+            if (country != null) {
+                extras.put(BSFT_USER__COUNTRY, country);
+            }
+
+            userInfo.setDetails(extras);
+
+            userInfo.save(getContext());
+        }
     }
 
     // ** KitIntegration.PushListener **
@@ -310,9 +346,7 @@ public class BlueshiftKit extends KitIntegration implements
 
         Bundle bundle = intent != null ? intent.getExtras() : null;
         Set<String> keys = bundle != null ? bundle.keySet() : null;
-        return keys != null
-                && keys.contains(BSFT_MESSAGE_UUID)
-                && (keys.contains(BSFT_MESSAGE) || keys.contains(BSFT_SILENT_PUSH));
+        return keys != null && keys.contains(BSFT_MESSAGE_UUID);
     }
 
     @Override

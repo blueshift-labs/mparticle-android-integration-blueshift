@@ -63,14 +63,6 @@ public class BlueshiftKit extends KitIntegration implements
 
     private static final String BSFT_MESSAGE_UUID = "bsft_message_uuid";
 
-    private static final String BSFT_USER_AGE = "age";
-    private static final String BSFT_USER__ADDR = "address";
-    private static final String BSFT_USER__MOBL = "mobile";
-    private static final String BSFT_USER__CITY = "city";
-    private static final String BSFT_USER__STATE = "state";
-    private static final String BSFT_USER__ZIP = "zip";
-    private static final String BSFT_USER__COUNTRY = "country";
-
     private static Configuration blueshiftConfiguration;
 
     public static void setBlueshiftConfig(@NonNull Configuration config) {
@@ -266,72 +258,6 @@ public class BlueshiftKit extends KitIntegration implements
             String email = identities.get(MParticle.IdentityType.Email);
             userInfo.setEmail(email);
 
-            String facebookId = identities.get(MParticle.IdentityType.Facebook);
-            userInfo.setFacebookId(facebookId);
-
-            // attributes
-            Map<String, Object> attributes = filteredMParticleUser.getUserAttributes();
-
-            Object firstName = attributes.get(MParticle.UserAttributes.FIRSTNAME);
-            if (firstName != null) {
-                userInfo.setFirstname(String.valueOf(firstName));
-            } else {
-                userInfo.setFirstname(null);
-            }
-
-            Object lastName = attributes.get(MParticle.UserAttributes.FIRSTNAME);
-            if (lastName != null) {
-                userInfo.setLastname(String.valueOf(lastName));
-            } else {
-                userInfo.setLastname(null);
-            }
-
-            Object gender = attributes.get(MParticle.UserAttributes.GENDER);
-            if (gender != null) {
-                userInfo.setGender(String.valueOf(gender));
-            } else {
-                userInfo.setGender(null);
-            }
-
-            HashMap<String, Object> extras = new HashMap<>();
-
-            Object age = attributes.get(MParticle.UserAttributes.AGE);
-            if (age != null) {
-                extras.put(BSFT_USER_AGE, age);
-            }
-
-            Object address = attributes.get(MParticle.UserAttributes.ADDRESS);
-            if (address != null) {
-                extras.put(BSFT_USER__ADDR, address);
-            }
-
-            Object mobile = attributes.get(MParticle.UserAttributes.MOBILE_NUMBER);
-            if (mobile != null) {
-                extras.put(BSFT_USER__MOBL, mobile);
-            }
-
-            Object city = attributes.get(MParticle.UserAttributes.CITY);
-            if (city != null) {
-                extras.put(BSFT_USER__CITY, city);
-            }
-
-            Object state = attributes.get(MParticle.UserAttributes.STATE);
-            if (state != null) {
-                extras.put(BSFT_USER__STATE, state);
-            }
-
-            Object zip = attributes.get(MParticle.UserAttributes.ZIPCODE);
-            if (zip != null) {
-                extras.put(BSFT_USER__ZIP, zip);
-            }
-
-            Object country = attributes.get(MParticle.UserAttributes.COUNTRY);
-            if (country != null) {
-                extras.put(BSFT_USER__COUNTRY, country);
-            }
-
-            userInfo.setDetails(extras);
-
             userInfo.save(getContext());
         }
     }
@@ -396,9 +322,6 @@ public class BlueshiftKit extends KitIntegration implements
 
             String customerId = user.getUserIdentities().get(MParticle.IdentityType.CustomerId);
             userInfo.setRetailerCustomerId(customerId);
-
-            String fbId = user.getUserIdentities().get(MParticle.IdentityType.Facebook);
-            userInfo.setFacebookId(fbId);
 
             userInfo.save(getContext());
 

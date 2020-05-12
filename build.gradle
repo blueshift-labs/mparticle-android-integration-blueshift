@@ -6,7 +6,7 @@ publish {
     repoName = 'maven'
     groupId = 'com.blueshift'
     artifactId = 'android-mparticle-kit'
-    publishVersion = '0.0.3'
+    publishVersion = '0.0.4'
     desc = 'Blueshift mParticle Kit SDK'
     website = 'https://github.com/blueshift-labs/mparticle-android-integration-blueshift'
 }

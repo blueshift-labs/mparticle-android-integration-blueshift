@@ -1,36 +1,43 @@
-buildscript {
-    if (!project.hasProperty('version') || project.version.equals('unspecified')) {
-        project.version = '+'
-    }
+apply plugin: 'com.novoda.bintray-release'
+apply plugin: 'com.android.library'
 
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        maven {
-            url 'https://maven.google.com/'
-            name 'Google'
+publish {
+    userOrg = 'blueshift-labs'
+    repoName = 'maven'
+    groupId = 'com.blueshift'
+    artifactId = 'android-mparticle-kit'
+    publishVersion = '0.0.4'
+    desc = 'Blueshift mParticle Kit SDK'
+    website = 'https://github.com/blueshift-labs/mparticle-android-integration-blueshift'
+}
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 29
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    dependencies {
-        classpath 'com.mparticle:android-kit-plugin:+'
-    }
 }
-
-apply plugin: 'com.mparticle.kit'
 
 dependencies {
-    //TODO: Option 1: Replace with your Maven Central Dependency (preferred)
-    //compile 'com.example:example-artifact:1.2.3'
-    implementation 'com.blueshift:android-sdk:3.0.7'
+    implementation "androidx.annotation:annotation:1.1.0"
+    implementation 'androidx.appcompat:appcompat:1.1.0'
 
-    //TODO: Option 2: Include your jar in ./libs only if you're not in Maven Central
-    //TODO:           Please name the jar based on the version, ie AcmeSDK1234.jar
-    //compile fileTree(dir: 'libs', include: ['*.jar'])
-}
+    api 'com.mparticle:android-kit-base:5.14.0'
+    api 'com.blueshift:android-sdk:3.0.9'
 
-repositories {
-    maven {
-        url 'https://maven.google.com/'
-        name 'Google'
-    }
+    testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
+    testImplementation 'org.powermock:powermock-api-mockito2:2.0.2'
+    testImplementation 'org.powermock:powermock-core:2.0.2'
+
+    testImplementation 'junit:junit:4.13'
 }

@@ -88,6 +88,10 @@ public class BlueshiftKit extends KitIntegration implements
         Blueshift.getInstance(context).displayInAppMessages();
     }
 
+    public static boolean isBlueshiftUniversalLink(Uri uri) {
+        return BlueshiftLinksHandler.isBlueshiftLink(uri);
+    }
+
     public static void handleBlueshiftUniversalLinks(Context context, Intent intent, BlueshiftLinksListener listener) {
         new BlueshiftLinksHandler(context).handleBlueshiftUniversalLinks(intent, listener);
     }

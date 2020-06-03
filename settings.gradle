@@ -1,0 +1,3 @@
+rootProject.name='Blueshift mParticle Kit'
+include ':android-mparticle-kit'
+include ':mp-sample-app'

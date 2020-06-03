@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -11,6 +12,8 @@ import androidx.annotation.Nullable;
 
 import com.blueshift.Blueshift;
 import com.blueshift.BlueshiftConstants;
+import com.blueshift.BlueshiftLinksHandler;
+import com.blueshift.BlueshiftLinksListener;
 import com.blueshift.BlueshiftLogger;
 import com.blueshift.fcm.BlueshiftMessagingService;
 import com.blueshift.inappmessage.InAppApiCallback;
@@ -83,6 +86,14 @@ public class BlueshiftKit extends KitIntegration implements
 
     public static void displayInAppMessage(@NonNull Context context) {
         Blueshift.getInstance(context).displayInAppMessages();
+    }
+
+    public static void handleBlueshiftUniversalLinks(Context context, Intent intent, BlueshiftLinksListener listener) {
+        new BlueshiftLinksHandler(context).handleBlueshiftUniversalLinks(intent, listener);
+    }
+
+    public static void handleBlueshiftUniversalLinks(Context context, Uri link, Bundle extras, BlueshiftLinksListener listener) {
+        new BlueshiftLinksHandler(context).handleBlueshiftUniversalLinks(link, extras, listener);
     }
 
     @Override

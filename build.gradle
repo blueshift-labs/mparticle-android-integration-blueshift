@@ -1,43 +1,30 @@
-apply plugin: 'com.novoda.bintray-release'
-apply plugin: 'com.android.library'
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-publish {
-    userOrg = 'blueshift-labs'
-    repoName = 'maven'
-    groupId = 'com.blueshift'
-    artifactId = 'android-mparticle-kit'
-    publishVersion = '0.0.4'
-    desc = 'Blueshift mParticle Kit SDK'
-    website = 'https://github.com/blueshift-labs/mparticle-android-integration-blueshift'
-}
+buildscript {
+    repositories {
+        google()
+        jcenter()
 
-android {
-    compileSdkVersion 29
-
-    defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 29
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.6.3'
+        classpath 'com.novoda:bintray-release:0.9.2'
+        classpath 'com.google.gms:google-services:4.3.3'
+
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
     }
 }
 
-dependencies {
-    implementation "androidx.annotation:annotation:1.1.0"
-    implementation 'androidx.appcompat:appcompat:1.1.0'
+allprojects {
+    repositories {
+        google()
+        jcenter()
 
-    api 'com.mparticle:android-kit-base:5.14.0'
-    api 'com.blueshift:android-sdk:3.0.9'
+    }
+}
 
-    testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
-    testImplementation 'org.powermock:powermock-api-mockito2:2.0.2'
-    testImplementation 'org.powermock:powermock-core:2.0.2'
-
-    testImplementation 'junit:junit:4.13'
+task clean(type: Delete) {
+    delete rootProject.buildDir
 }

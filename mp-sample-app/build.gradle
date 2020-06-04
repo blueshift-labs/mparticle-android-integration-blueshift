@@ -14,7 +14,7 @@ android {
     buildToolsVersion "29.0.2"
 
     defaultConfig {
-        applicationId "com.blueshift.mp_sample_app"
+        applicationId "com.blueshift.reads"
         minSdkVersion 16
         targetSdkVersion 29
         versionCode 1
@@ -39,7 +39,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.mparticle:android-core:5.14.0'
-    implementation 'com.blueshift:android-mparticle-kit:0.0.4'
+    implementation 'com.blueshift:android-mparticle-kit:0.0.6'
 //    implementation project(":android-mparticle-kit")
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'

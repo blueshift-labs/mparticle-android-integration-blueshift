@@ -27,6 +27,10 @@ public class DashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
+
+        boolean isBlueshiftLink = BlueshiftKit.isBlueshiftUniversalLink(getIntent().getData());
+        if (isBlueshiftLink)
+            BlueshiftKit.handleBlueshiftUniversalLinks(this, getIntent(), null);
     }
 
     public void onLogout(View v) {

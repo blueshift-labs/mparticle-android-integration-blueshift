@@ -2,11 +2,13 @@ apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'com.android.library'
 
 publish {
-    userOrg = 'blueshift-labs'
     repoName = 'maven'
+    userOrg = 'blueshift-labs'
+
     groupId = 'com.blueshift'
     artifactId = 'android-mparticle-kit'
-    publishVersion = '0.0.4'
+    publishVersion = '0.0.6'
+
     desc = 'Blueshift mParticle Kit SDK'
     website = 'https://github.com/blueshift-labs/mparticle-android-integration-blueshift'
 }
@@ -32,8 +34,8 @@ dependencies {
     implementation "androidx.annotation:annotation:1.1.0"
     implementation 'androidx.appcompat:appcompat:1.1.0'
 
-    api 'com.mparticle:android-kit-base:5.14.0'
-    api 'com.blueshift:android-sdk:3.0.9'
+    api 'com.mparticle:android-kit-base:5.14.3'
+    api 'com.blueshift:android-sdk:3.1.0'
 
     testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
     testImplementation 'org.powermock:powermock-api-mockito2:2.0.2'

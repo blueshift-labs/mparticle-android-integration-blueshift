@@ -6,6 +6,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.blueshift.BlueshiftLogger;
 import com.blueshift.model.Configuration;
 import com.mparticle.MParticle;
 import com.mparticle.MParticleOptions;
@@ -22,6 +23,8 @@ public class App extends Application implements TaskFailureListener, TaskSuccess
     @Override
     public void onCreate() {
         super.onCreate();
+        BlueshiftLogger.setLogLevel(BlueshiftLogger.VERBOSE);
+
         Configuration configuration = new Configuration();
 
         // for push

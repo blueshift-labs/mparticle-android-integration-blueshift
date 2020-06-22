@@ -128,6 +128,13 @@ public class BlueshiftKit extends KitIntegration implements
         return defaultValue;
     }
 
+    private void logTrackingConfig(String eventName, boolean status, String key) {
+        BlueshiftLogger.i(
+                TAG,
+                "Sending \"" + eventName + " Events\" directly to Blueshift " + (status ? "enabled." : "disabled! To Enable, set \"" + key + "=true\" in settings.")
+        );
+    }
+
     @Override
     protected List<ReportingMessage> onKitCreate(Map<String, String> settings, Context context) {
         if (blueshiftConfiguration == null) {
@@ -143,9 +150,14 @@ public class BlueshiftKit extends KitIntegration implements
         }
 
         shouldLogMPEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_MP_EVENTS, false);
-        shouldLogUserEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_USER_EVENTS,true);
-        shouldLogCommerceEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_COMMERCE_EVENTS,false);
+        shouldLogUserEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_USER_EVENTS, true);
+        shouldLogCommerceEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_COMMERCE_EVENTS, false);
         shouldLogScreenViewEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_SCREEN_VIEW_EVENTS, false);
+
+        logTrackingConfig("MP", shouldLogMPEvents, BLUESHIFT_SHOULD_LOG_MP_EVENTS);
+        logTrackingConfig("Commerce", shouldLogCommerceEvents, BLUESHIFT_SHOULD_LOG_COMMERCE_EVENTS);
+        logTrackingConfig("Identify", shouldLogUserEvents, BLUESHIFT_SHOULD_LOG_USER_EVENTS);
+        logTrackingConfig("ScreenView", shouldLogScreenViewEvents, BLUESHIFT_SHOULD_LOG_SCREEN_VIEW_EVENTS);
 
         // set app-icon as notification icon if not set
         if (blueshiftConfiguration.getAppIcon() == 0) {
@@ -251,10 +263,10 @@ public class BlueshiftKit extends KitIntegration implements
         if (shouldLogCommerceEvents) {
             HashMap<String, Object> extras = getExtras(commerceEvent.getCustomAttributes());
 
-            String eventName = commerceEvent.getEventName();
-            if (eventName != null) {
+            String productAction = commerceEvent.getProductAction();
+            if (productAction != null) {
                 Blueshift.getInstance(getContext()).trackEvent(
-                        eventName,
+                        productAction,
                         extras,
                         false
                 );
@@ -409,6 +421,8 @@ public class BlueshiftKit extends KitIntegration implements
                                 Blueshift
                                         .getInstance(getContext())
                                         .identifyUserByEmail(email, null, false);
+                                // save it for matching next time
+                                cacheEmailAddress(email);
                             }
                         }
                     }
@@ -435,5 +449,13 @@ public class BlueshiftKit extends KitIntegration implements
     private boolean isNewEmail(String newEmail) {
         String email = getKitPreferences().getString(PREF_KEY_CURRENT_EMAIL, null);
         return (email != null && !email.equals(newEmail)) || (email == null && newEmail != null);
+    }
+
+    private void cacheEmailAddress(String email) {
+        if (KitUtils.isEmpty(email)) {
+            getKitPreferences().edit().remove(PREF_KEY_CURRENT_EMAIL).apply();
+        } else {
+            getKitPreferences().edit().putString(PREF_KEY_CURRENT_EMAIL, email).apply();
+        }
     }
 }

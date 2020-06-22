@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 
 import com.blueshift.Blueshift;
 import com.blueshift.BlueshiftConstants;
+import com.blueshift.BlueshiftExecutor;
 import com.blueshift.BlueshiftLinksHandler;
 import com.blueshift.BlueshiftLinksListener;
 import com.blueshift.BlueshiftLogger;
@@ -20,6 +21,7 @@ import com.blueshift.inappmessage.InAppApiCallback;
 import com.blueshift.model.Configuration;
 import com.blueshift.model.UserInfo;
 import com.blueshift.util.BlueshiftUtils;
+import com.blueshift.util.DeviceUtils;
 import com.mparticle.MPEvent;
 import com.mparticle.MParticle;
 import com.mparticle.commerce.CommerceEvent;
@@ -34,24 +36,23 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
  * This is an mParticle kit, used to extend the functionality of mParticle SDK. Most Kits are wrappers/adapters
  * to a 3rd party SDK, primarily used to map analogous public mParticle APIs onto a 3rd-party API/platform.
- *
- *
+ * <p>
+ * <p>
  * Follow the steps below to implement your kit:
- *
- *  - Edit ./build.gradle to add any necessary dependencies, such as your company's SDK
- *  - Rename this file/class, using your company name as the prefix, ie "AcmeKit"
- *  - View the javadocs to learn more about the KitIntegration class as well as the interfaces it defines.
- *  - Choose the additional interfaces that you need and have this class implement them,
- *    ie 'AcmeKit extends KitIntegration implements KitIntegration.PushListener'
- *
- *  In addition to this file, you also will need to edit:
- *  - ./build.gradle (as explained above)
- *  - ./README.md
- *  - ./src/main/AndroidManifest.xml
- *  - ./consumer-proguard.pro
+ * <p>
+ * - Edit ./build.gradle to add any necessary dependencies, such as your company's SDK
+ * - Rename this file/class, using your company name as the prefix, ie "AcmeKit"
+ * - View the javadocs to learn more about the KitIntegration class as well as the interfaces it defines.
+ * - Choose the additional interfaces that you need and have this class implement them,
+ * ie 'AcmeKit extends KitIntegration implements KitIntegration.PushListener'
+ * <p>
+ * In addition to this file, you also will need to edit:
+ * - ./build.gradle (as explained above)
+ * - ./README.md
+ * - ./src/main/AndroidManifest.xml
+ * - ./consumer-proguard.pro
  */
 public class BlueshiftKit extends KitIntegration implements
         KitIntegration.EventListener,
@@ -61,12 +62,26 @@ public class BlueshiftKit extends KitIntegration implements
         KitIntegration.IdentityListener {
 
     private static final String TAG = "BlueshiftKit";
+
+    // settings
     private static final String BLUESHIFT_EVENT_API_KEY = "eventApiKey";
+    private static final String BLUESHIFT_SHOULD_LOG_MP_EVENTS = "blueshift_should_log_mp_events";
+    private static final String BLUESHIFT_SHOULD_LOG_USER_EVENTS = "blueshift_should_log_user_events";
+    private static final String BLUESHIFT_SHOULD_LOG_COMMERCE_EVENTS = "blueshift_should_log_commerce_events";
+    private static final String BLUESHIFT_SHOULD_LOG_SCREEN_VIEW_EVENTS = "blueshift_should_log_screen_view_events";
+
+    // preferences
     private static final String PREF_KEY_CURRENT_EMAIL = "blueshift.user.email";
 
+    // payload
     private static final String BSFT_MESSAGE_UUID = "bsft_message_uuid";
 
+    // local configuration
     private static Configuration blueshiftConfiguration;
+    private boolean shouldLogMPEvents = false;
+    private boolean shouldLogUserEvents = true;
+    private boolean shouldLogCommerceEvents = false;
+    private boolean shouldLogScreenViewEvents = false;
 
     public static void setBlueshiftConfig(@NonNull Configuration config) {
         blueshiftConfiguration = config;
@@ -100,6 +115,19 @@ public class BlueshiftKit extends KitIntegration implements
         new BlueshiftLinksHandler(context).handleBlueshiftUniversalLinks(link, extras, listener);
     }
 
+    private boolean getBooleanSettings(Map<String, String> settings, String key, boolean defaultValue) {
+        if (settings != null && key != null && settings.containsKey(key)) {
+            try {
+                String val = settings.get(key);
+                return Boolean.parseBoolean(val);
+            } catch (Exception e) {
+                BlueshiftLogger.e(TAG, e);
+            }
+        }
+
+        return defaultValue;
+    }
+
     @Override
     protected List<ReportingMessage> onKitCreate(Map<String, String> settings, Context context) {
         if (blueshiftConfiguration == null) {
@@ -113,6 +141,11 @@ public class BlueshiftKit extends KitIntegration implements
         } else {
             blueshiftConfiguration.setApiKey(apiKey);
         }
+
+        shouldLogMPEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_MP_EVENTS, false);
+        shouldLogUserEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_USER_EVENTS,true);
+        shouldLogCommerceEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_COMMERCE_EVENTS,false);
+        shouldLogScreenViewEvents = getBooleanSettings(settings, BLUESHIFT_SHOULD_LOG_SCREEN_VIEW_EVENTS, false);
 
         // set app-icon as notification icon if not set
         if (blueshiftConfiguration.getAppIcon() == 0) {
@@ -172,11 +205,16 @@ public class BlueshiftKit extends KitIntegration implements
 
     @Override
     public List<ReportingMessage> logScreen(String screenName, Map<String, String> map) {
-        HashMap<String, Object> extras = getExtras(map);
-        extras.put(BlueshiftConstants.KEY_SCREEN_VIEWED, screenName);
+        if (shouldLogScreenViewEvents) {
+            HashMap<String, Object> extras = getExtras(map);
+            extras.put(BlueshiftConstants.KEY_SCREEN_VIEWED, screenName);
 
-        Blueshift.getInstance(getContext())
-                .trackEvent(BlueshiftConstants.EVENT_PAGE_LOAD, extras, false);
+            Blueshift.getInstance(getContext()).trackEvent(
+                    BlueshiftConstants.EVENT_PAGE_LOAD,
+                    extras,
+                    false
+            );
+        }
 
         List<ReportingMessage> messages = new LinkedList<>();
         messages.add(new ReportingMessage(this, ReportingMessage.MessageType.SCREEN_VIEW, System.currentTimeMillis(), map));
@@ -186,10 +224,15 @@ public class BlueshiftKit extends KitIntegration implements
     @Nullable
     @Override
     public List<ReportingMessage> logEvent(@NonNull MPEvent event) {
-        HashMap<String, Object> extras = getExtras(event.getCustomAttributes());
+        if (shouldLogMPEvents) {
+            HashMap<String, Object> extras = getExtras(event.getCustomAttributes());
 
-        Blueshift.getInstance(getContext())
-                .trackEvent(event.getEventName(), extras, false);
+            Blueshift.getInstance(getContext()).trackEvent(
+                    event.getEventName(),
+                    extras,
+                    false
+            );
+        }
 
         List<ReportingMessage> messages = new LinkedList<>();
         messages.add(ReportingMessage.fromEvent(this, event));
@@ -205,12 +248,17 @@ public class BlueshiftKit extends KitIntegration implements
 
     @Override
     public List<ReportingMessage> logEvent(CommerceEvent commerceEvent) {
-        HashMap<String, Object> extras = getExtras(commerceEvent.getCustomAttributes());
+        if (shouldLogCommerceEvents) {
+            HashMap<String, Object> extras = getExtras(commerceEvent.getCustomAttributes());
 
-        String eventName = commerceEvent.getEventName();
-        if (eventName != null) {
-            Blueshift.getInstance(getContext())
-                    .trackEvent(eventName, extras, false);
+            String eventName = commerceEvent.getEventName();
+            if (eventName != null) {
+                Blueshift.getInstance(getContext()).trackEvent(
+                        eventName,
+                        extras,
+                        false
+                );
+            }
         }
 
         List<ReportingMessage> messages = new LinkedList<>();
@@ -274,6 +322,8 @@ public class BlueshiftKit extends KitIntegration implements
             userInfo.setEmail(email);
 
             userInfo.save(getContext());
+
+            identifyWithEmailId(email);
         }
     }
 
@@ -298,7 +348,11 @@ public class BlueshiftKit extends KitIntegration implements
 
     @Override
     public boolean onPushRegistration(String instanceId, String senderId) {
-        return false; // Blueshift depends on mP to do the push registration
+        // fire an identify event on push token refresh
+        identifyWithDeviceId();
+
+        // Blueshift depends on mP to do the push registration
+        return false;
     }
 
     // ** KitIntegration.IdentityListener **
@@ -340,12 +394,41 @@ public class BlueshiftKit extends KitIntegration implements
 
             userInfo.save(getContext());
 
-            // whenever user is updated, and email is changed, we should call an identify
-            if (isNewEmail(email)) {
-                Blueshift
-                        .getInstance(getContext())
-                        .identifyUserByEmail(email, null, false);
-            }
+            identifyWithEmailId(email);
+        }
+    }
+
+    private void identifyWithEmailId(final String email) {
+        if (shouldLogUserEvents) {
+            BlueshiftExecutor.getInstance().runOnNetworkThread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            // whenever user is updated, and email is changed, we should call an identify
+                            if (isNewEmail(email)) {
+                                Blueshift
+                                        .getInstance(getContext())
+                                        .identifyUserByEmail(email, null, false);
+                            }
+                        }
+                    }
+            );
+        }
+    }
+
+    private void identifyWithDeviceId() {
+        if (shouldLogUserEvents) {
+            BlueshiftExecutor.getInstance().runOnNetworkThread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            String deviceId = DeviceUtils.getDeviceId(getContext());
+                            Blueshift
+                                    .getInstance(getContext())
+                                    .identifyUserByDeviceId(deviceId, null, false);
+                        }
+                    }
+            );
         }
     }
 

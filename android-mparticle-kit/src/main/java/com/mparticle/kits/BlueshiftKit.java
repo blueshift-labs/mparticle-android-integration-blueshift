@@ -35,25 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * This is an mParticle kit, used to extend the functionality of mParticle SDK. Most Kits are wrappers/adapters
- * to a 3rd party SDK, primarily used to map analogous public mParticle APIs onto a 3rd-party API/platform.
- * <p>
- * <p>
- * Follow the steps below to implement your kit:
- * <p>
- * - Edit ./build.gradle to add any necessary dependencies, such as your company's SDK
- * - Rename this file/class, using your company name as the prefix, ie "AcmeKit"
- * - View the javadocs to learn more about the KitIntegration class as well as the interfaces it defines.
- * - Choose the additional interfaces that you need and have this class implement them,
- * ie 'AcmeKit extends KitIntegration implements KitIntegration.PushListener'
- * <p>
- * In addition to this file, you also will need to edit:
- * - ./build.gradle (as explained above)
- * - ./README.md
- * - ./src/main/AndroidManifest.xml
- * - ./consumer-proguard.pro
- */
 public class BlueshiftKit extends KitIntegration implements
         KitIntegration.EventListener,
         KitIntegration.CommerceListener,

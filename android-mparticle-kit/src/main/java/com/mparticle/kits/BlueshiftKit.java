@@ -322,16 +322,26 @@ public class BlueshiftKit extends KitIntegration implements
 
     // ** KitIntegration.PushListener **
 
+    private boolean isBlueshiftPush(Intent intent) {
+        Bundle bundle = intent != null ? intent.getExtras() : null;
+        Set<String> keys = bundle != null ? bundle.keySet() : null;
+        return keys != null && keys.contains(BSFT_MESSAGE_UUID);
+    }
+
     @Override
     public boolean willHandlePushMessage(Intent intent) {
         Configuration config = BlueshiftUtils.getConfiguration(getContext());
         if (config != null && !config.isPushEnabled()) {
+            BlueshiftLogger.w(TAG, "Blueshift push handling is disabled. Skipping...");
             return false;
         }
 
-        Bundle bundle = intent != null ? intent.getExtras() : null;
-        Set<String> keys = bundle != null ? bundle.keySet() : null;
-        return keys != null && keys.contains(BSFT_MESSAGE_UUID);
+        boolean isBlueshiftPush = isBlueshiftPush(intent);
+        if (!isBlueshiftPush) {
+            BlueshiftLogger.d(TAG, "Push message from outside Blueshift detected. Skipping...");
+        }
+
+        return isBlueshiftPush;
     }
 
     @Override

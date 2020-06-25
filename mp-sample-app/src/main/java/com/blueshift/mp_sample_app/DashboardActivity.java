@@ -33,6 +33,13 @@ public class DashboardActivity extends AppCompatActivity {
             BlueshiftKit.handleBlueshiftUniversalLinks(this, getIntent(), null);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (MParticle.getInstance() != null)
+            MParticle.getInstance().logScreen("DashboardActivity");
+    }
+
     public void onLogout(View v) {
         if (MParticle.getInstance() != null) {
             MParticle.getInstance().Identity().logout()

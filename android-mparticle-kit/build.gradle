@@ -1,13 +1,15 @@
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'com.android.library'
 
+ext.kitVersion = '0.0.7'
+
 publish {
     repoName = 'maven'
     userOrg = 'blueshift-labs'
 
     groupId = 'com.blueshift'
     artifactId = 'android-mparticle-kit'
-    publishVersion = '0.0.7'
+    publishVersion = kitVersion
 
     desc = 'Blueshift mParticle Kit SDK'
     website = 'https://github.com/blueshift-labs/mparticle-android-integration-blueshift'
@@ -21,6 +23,8 @@ android {
         targetSdkVersion 29
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField 'String', 'KIT_VERSION', "\"$kitVersion\""
     }
     buildTypes {
         release {

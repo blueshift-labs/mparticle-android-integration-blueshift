@@ -27,6 +27,7 @@ import com.mparticle.MParticle;
 import com.mparticle.commerce.CommerceEvent;
 import com.mparticle.consent.ConsentState;
 import com.mparticle.identity.MParticleUser;
+import com.mparticle.kits.blueshift.BuildConfig;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -51,10 +52,8 @@ public class BlueshiftKit extends KitIntegration implements
     private static final String BLUESHIFT_SHOULD_LOG_COMMERCE_EVENTS = "blueshift_should_log_commerce_events";
     private static final String BLUESHIFT_SHOULD_LOG_SCREEN_VIEW_EVENTS = "blueshift_should_log_screen_view_events";
 
-    // preferences
-    private static final String PREF_KEY_CURRENT_EMAIL = "blueshift.user.email";
-
     // payload
+    private static final String BSFT_KIT_VERSION = "bsft_mparticle_kit_version";
     private static final String BSFT_MESSAGE_UUID = "bsft_message_uuid";
 
     // local configuration
@@ -116,6 +115,32 @@ public class BlueshiftKit extends KitIntegration implements
         );
     }
 
+    private void logSettings(Map<String, String> settings) {
+        try {
+            StringBuilder builder = new StringBuilder();
+            builder.append("mParticle settings\n");
+            builder.append("{\n");
+            Set<String> keys = settings.keySet();
+            boolean first = true;
+            for (String key : keys) {
+                if (first) {
+                    first = false;
+                    builder.append("\t");
+                } else {
+                    builder.append(",");
+                    builder.append("\n");
+                    builder.append("\t");
+                }
+                builder.append("\"").append(key).append("\" : \"").append(settings.get(key)).append("\"");
+            }
+            builder.append("\n}");
+
+            BlueshiftLogger.i(TAG, builder.toString());
+        } catch (Exception e) {
+            BlueshiftLogger.e(TAG, e);
+        }
+    }
+
     @Override
     protected List<ReportingMessage> onKitCreate(Map<String, String> settings, Context context) {
         if (blueshiftConfiguration == null) {
@@ -139,6 +164,8 @@ public class BlueshiftKit extends KitIntegration implements
         logTrackingConfig("Commerce", shouldLogCommerceEvents, BLUESHIFT_SHOULD_LOG_COMMERCE_EVENTS);
         logTrackingConfig("Identify", shouldLogUserEvents, BLUESHIFT_SHOULD_LOG_USER_EVENTS);
         logTrackingConfig("ScreenView", shouldLogScreenViewEvents, BLUESHIFT_SHOULD_LOG_SCREEN_VIEW_EVENTS);
+
+        logSettings(settings);
 
         // set app-icon as notification icon if not set
         if (blueshiftConfiguration.getAppIcon() == 0) {
@@ -301,6 +328,14 @@ public class BlueshiftKit extends KitIntegration implements
         updateBlueshiftUserInfo(filteredMParticleUser);
     }
 
+    /**
+     * This method is invoked each time when {@link UserAttributeListener} callback methods are invoked.
+     *
+     * This method is responsible for firing an identify call to Blueshift directly after updating
+     * details inside {@link UserInfo} object.
+     *
+     * @param filteredMParticleUser user object sent by mParticle
+     */
     private void updateBlueshiftUserInfo(FilteredMParticleUser filteredMParticleUser) {
         if (filteredMParticleUser != null) {
             UserInfo userInfo = UserInfo.getInstance(getContext());
@@ -316,7 +351,7 @@ public class BlueshiftKit extends KitIntegration implements
 
             userInfo.save(getContext());
 
-            identifyWithEmailId(email);
+            invokeBlueshiftIdentify();
         }
     }
 
@@ -352,7 +387,7 @@ public class BlueshiftKit extends KitIntegration implements
     @Override
     public boolean onPushRegistration(String instanceId, String senderId) {
         // fire an identify event on push token refresh
-        identifyWithDeviceId();
+        invokeBlueshiftIdentify();
 
         // Blueshift depends on mP to do the push registration
         return false;
@@ -385,6 +420,14 @@ public class BlueshiftKit extends KitIntegration implements
         updateUser(mParticleUser);
     }
 
+    /**
+     * This method is invoked each time when {@link IdentityListener} callback methods are invoked.
+     *
+     * This method is responsible for firing an identify call to Blueshift directly after updating
+     * details inside {@link UserInfo} object.
+     *
+     * @param user user object sent by mParticle
+     */
     private void updateUser(MParticleUser user) {
         if (user != null) {
             UserInfo userInfo = UserInfo.getInstance(getContext());
@@ -397,31 +440,11 @@ public class BlueshiftKit extends KitIntegration implements
 
             userInfo.save(getContext());
 
-            identifyWithEmailId(email);
+            invokeBlueshiftIdentify();
         }
     }
 
-    private void identifyWithEmailId(final String email) {
-        if (shouldLogUserEvents) {
-            BlueshiftExecutor.getInstance().runOnNetworkThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            // whenever user is updated, and email is changed, we should call an identify
-                            if (isNewEmail(email)) {
-                                Blueshift
-                                        .getInstance(getContext())
-                                        .identifyUserByEmail(email, null, false);
-                                // save it for matching next time
-                                cacheEmailAddress(email);
-                            }
-                        }
-                    }
-            );
-        }
-    }
-
-    private void identifyWithDeviceId() {
+    private void invokeBlueshiftIdentify() {
         if (shouldLogUserEvents) {
             BlueshiftExecutor.getInstance().runOnNetworkThread(
                     new Runnable() {
@@ -430,23 +453,17 @@ public class BlueshiftKit extends KitIntegration implements
                             String deviceId = DeviceUtils.getDeviceId(getContext());
                             Blueshift
                                     .getInstance(getContext())
-                                    .identifyUserByDeviceId(deviceId, null, false);
+                                    .identifyUserByDeviceId(deviceId, getKitIdentifyParams(), false);
                         }
                     }
             );
         }
     }
 
-    private boolean isNewEmail(String newEmail) {
-        String email = getKitPreferences().getString(PREF_KEY_CURRENT_EMAIL, null);
-        return (email != null && !email.equals(newEmail)) || (email == null && newEmail != null);
-    }
+    private HashMap<String, Object> getKitIdentifyParams() {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put(BSFT_KIT_VERSION, BuildConfig.KIT_VERSION);
 
-    private void cacheEmailAddress(String email) {
-        if (KitUtils.isEmpty(email)) {
-            getKitPreferences().edit().remove(PREF_KEY_CURRENT_EMAIL).apply();
-        } else {
-            getKitPreferences().edit().putString(PREF_KEY_CURRENT_EMAIL, email).apply();
-        }
+        return map;
     }
 }

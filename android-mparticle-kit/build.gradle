@@ -1,19 +1,6 @@
-apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'com.android.library'
 
-ext.kitVersion = '0.0.8'
-
-publish {
-    repoName = 'maven'
-    userOrg = 'blueshift-labs'
-
-    groupId = 'com.blueshift'
-    artifactId = 'android-mparticle-kit'
-    publishVersion = kitVersion
-
-    desc = 'Blueshift mParticle Kit SDK'
-    website = 'https://github.com/blueshift-labs/mparticle-android-integration-blueshift'
-}
+ext.kitVersion = '0.0.9'
 
 android {
     compileSdkVersion 29
@@ -26,12 +13,6 @@ android {
 
         buildConfigField 'String', 'KIT_VERSION', "\"$kitVersion\""
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
 }
 
 dependencies {
@@ -39,11 +20,11 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0'
 
     api 'com.mparticle:android-kit-base:5.14.4'
-    api 'com.blueshift:android-sdk:3.1.+'
+    api 'com.blueshift:android-sdk:3.1.10'
 //    api(name: 'android-sdk-debug', ext: 'aar')
 //    implementation 'com.google.code.gson:gson:2.8.6'
-//    implementation 'com.google.firebase:firebase-core:17.4.2'
-//    implementation 'com.google.firebase:firebase-messaging:20.2.0'
+    implementation 'com.google.firebase:firebase-core:17.4.2'
+    implementation 'com.google.firebase:firebase-messaging:20.2.0'
 
     testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
     testImplementation 'org.powermock:powermock-api-mockito2:2.0.2'
@@ -51,3 +32,11 @@ dependencies {
 
     testImplementation 'junit:junit:4.13'
 }
+
+ext {
+    PUBLISH_GROUP_ID = 'com.blueshift'
+    PUBLISH_ARTIFACT_ID = 'android-mparticle-kit'
+    PUBLISH_VERSION = '0.0.9'
+}
+
+apply from: "${rootProject.projectDir}/scripts/publish-mavencentral.gradle"

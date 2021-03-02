@@ -21,7 +21,13 @@ allprojects {
     repositories {
         google()
         jcenter()
+        flatDir {
+            // take aar from the android-sdk project
+            dirs System.getenv('BSFT_ANDROID_SDK_PATH')
 
+            // take aar from the current project
+            // dirs 'libs'
+        }
     }
 }
 

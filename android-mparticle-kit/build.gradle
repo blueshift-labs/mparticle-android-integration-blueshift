@@ -40,6 +40,10 @@ dependencies {
 
     api 'com.mparticle:android-kit-base:5.14.4'
     api 'com.blueshift:android-sdk:3.1.+'
+//    api(name: 'android-sdk-debug', ext: 'aar')
+//    implementation 'com.google.code.gson:gson:2.8.6'
+//    implementation 'com.google.firebase:firebase-core:17.4.2'
+//    implementation 'com.google.firebase:firebase-messaging:20.2.0'
 
     testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
     testImplementation 'org.powermock:powermock-api-mockito2:2.0.2'
